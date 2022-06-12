@@ -1,12 +1,21 @@
 from arduino import Arduino
+
 import time
 
-b = Arduino('/dev/ttyUSB0')
-pin = 1
+#specify the port as an argument
+my_board = Arduino('/dev/ttyUSB0')
 
-b.output([])
+#declare output pins as a list/tuple
+my_board.output([11,12,13])
 
-while (True):
-    val = b.analogRead(pin)
-    print val
-    time.sleep(0.5)
+#perform operations
+i=0
+while(i<10):
+    my_board.setHigh(13)
+    time.sleep(1)
+    my_board.setLow(13)
+    time.sleep(1)
+    i+=1
+
+#turn off all pins
+my_board.turnOff()

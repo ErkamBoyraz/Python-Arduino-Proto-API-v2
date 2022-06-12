@@ -1,52 +1,57 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import serial, time
 
-import serial
 
 class Arduino(object):
-
     __OUTPUT_PINS = -1
 
     def __init__(self, port, baudrate=115200):
         self.serial = serial.Serial(port, baudrate)
-        self.serial.write(b'99')
 
     def __str__(self):
-        return "Arduino is on port %s at %d baudrate" %(self.serial.port, self.serial.baudrate)
+        return "Arduino is on port %s at %d baudrate" % (self.serial.port, self.serial.baudrate)
 
     def output(self, pinArray):
         self.__sendData(len(pinArray))
 
-        if(isinstance(pinArray, list) or isinstance(pinArray, tuple)):
+        if (isinstance(pinArray, list) or isinstance(pinArray, tuple)):
             self.__OUTPUT_PINS = pinArray
             for each_pin in pinArray:
-                self.__sendData(each_pin)
+                self.__sendPin(each_pin)
         return True
 
     def setLow(self, pin):
         self.__sendData('0')
-        self.__sendData(pin)
+        self.__sendPin(pin)
         return True
 
     def setHigh(self, pin):
         self.__sendData('1')
-        self.__sendData(pin)
+        self.__sendPin(pin)
         return True
 
     def getState(self, pin):
         self.__sendData('2')
-        self.__sendData(pin)
-        return self.__formatPinState(self.__getData()[0])
+        self.__sendPin(pin)
+        return self.__formatPinState(self.__getData())
 
     def analogWrite(self, pin, value):
         self.__sendData('3')
-        self.__sendData(pin)
-        self.__sendData(value)
+        self.__sendPin(pin)
+        hex_value = hex(value)[2:]
+        if (len(hex_value) == 1):
+            hex1 = '0'
+            hex2 = hex_value[0]
+        else:
+            hex1 = hex_value[0]
+            hex2 = hex_value[1]
+
+        self.__sendData(hex1)
+        self.__sendData(hex2)
         return True
 
     def analogRead(self, pin):
         self.__sendData('4')
-        self.__sendData(pin)
+        self.__sendPin(pin)
         return self.__getData()
 
     def turnOff(self):
@@ -54,16 +59,17 @@ class Arduino(object):
             self.setLow(each_pin)
         return True
 
+    def __sendPin(self, pin):
+        pin_in_char = chr(pin + 48)
+        self.__sendData(pin_in_char)
+
     def __sendData(self, serial_data):
-        while(self.__getData()[0] != "w"):
+        while (self.__getData() != "what"):
             pass
-        serial_data = str(serial_data).encode('utf-8')
-        self.serial.write(serial_data)
+        self.serial.write(str(serial_data))
 
     def __getData(self):
-        input_string = self.serial.readline()
-        input_string = input_string.decode('utf-8')
-        return input_string.rstrip('\n')
+        return self.serial.readline().replace("\r\n", "")
 
     def __formatPinState(self, pinValue):
         if pinValue == '1':
@@ -74,3 +80,20 @@ class Arduino(object):
     def close(self):
         self.serial.close()
         return True
+
+    def __del__(self):
+        self.close()
+        return True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+        return True  # signal the caller that we want a "pass"
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return self.__str__()
